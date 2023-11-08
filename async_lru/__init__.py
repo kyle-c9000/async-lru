@@ -105,11 +105,29 @@ class _LRUCacheWrapper(Generic[_R]):
         self.__ignore_args = []
         self.__ignore_kwargs = []
         if ignore_args:
-            full_arg_spec = inspect.getfullargspec(fn)
+            arg_sig = inspect.signature(fn)
+            arg_names = []
+            arg_defaults = []
+            arg_kwonlyargs = []
+            arg_varargs = None
+            arg_varkw = None
+            for param in arg_sig.parameters.values():
+                if param.kind is param.POSITIONAL_OR_KEYWORD:
+                    arg_names.append(param.name)
+                elif param.kind is param.KEYWORD_ONLY:
+                    arg_names.append(param.name)
+                    arg_kwonlyargs.append(param.name)
+                elif param.kind is param.VAR_POSITIONAL:
+                    arg_varargs = param.name
+                elif param.kind is param.VAR_KEYWORD:
+                    arg_varkw = param.name
+                if param.default is not param.empty:
+                    arg_defaults.append(param.default)
+
             for ignore_arg in ignore_args:
                 self.__ignore_kwargs.append(ignore_arg)
                 try:
-                    arg_index = full_arg_spec.args.index(ignore_arg)
+                    arg_index = arg_names.index(ignore_arg)
                 except ValueError:
                     raise ValueError(f"ignore_arg {ignore_arg} does not exist on wrapped function")
                 else:
